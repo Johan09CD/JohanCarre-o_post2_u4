@@ -1,0 +1,148 @@
+# JohanCarreño-post2-u4
+
+## Descripción
+
+Sistema de pedidos desarrollado en Spring Boot que implementa los patrones de comportamiento Observer y Strategy.
+
+* Observer: gestiona notificaciones automáticas mediante eventos de pedidos.
+* Strategy: permite aplicar distintos algoritmos de descuento en tiempo de ejecución.
+
+---
+
+## Patrones implementados
+
+### Observer (Spring ApplicationEvents)
+
+* **Publicador**:
+  `GestorPedidosService` publica los eventos:
+  * `PedidoConfirmadoEvent`
+  * `PedidoCanceladoEvent`
+    utilizando `ApplicationEventPublisher`.
+
+* El publicador no conoce a los suscriptores, garantizando bajo acoplamiento.
+
+---
+
+### Suscriptores
+
+| Clase             | Evento escuchado       | Acción                       |
+| ----------------- | ---------------------- | ---------------------------- |
+| EmailNotifier     | Confirmado / Cancelado | Envía notificación por email |
+| InventarioUpdater | Confirmado / Cancelado | Reserva o libera stock       |
+| AuditoriaLogger   | Confirmado / Cancelado | Registra en auditoría        |
+
+---
+
+### Cómo agregar un nuevo suscriptor
+
+1. Crear una clase con la anotación `@Component`.
+2. Definir métodos con `@EventListener`.
+3. No es necesario modificar `GestorPedidosService`.
+
+---
+
+## Strategy - Motor de Descuentos
+
+* **Interfaz**: `EstrategiaDescuento`
+
+  * `calcular(double subtotal)`
+  * `getNombre()`
+
+---
+
+### Estrategias disponibles
+
+| Clase              | Descuento aplicado |
+| ------------------ | ------------------ |
+| DescuentoTemporada | 20% del subtotal   |
+| DescuentoVIP       | 30% del subtotal   |
+| DescuentoCupon     | $15.000 fijo       |
+
+---
+
+### Contexto
+
+* `CarritoService` recibe automáticamente todas las estrategias mediante inyección de Spring.
+* Permite activar una estrategia en tiempo de ejecución usando:
+
+```
+activarDescuento("nombre")
+```
+
+---
+
+### Cómo agregar una nueva estrategia
+
+1. Crear una clase con la anotación `@Service`.
+2. Implementar la interfaz `EstrategiaDescuento`.
+3. Spring la inyectará automáticamente en `CarritoService`.
+
+---
+
+## Instrucciones de ejecución
+
+```
+mvn clean package
+mvn spring-boot:run
+mvn test
+```
+
+---
+
+## Salida de consola esperada
+
+```
+--- Confirmando pedido P-003 (Observer) ---
+[GESTOR] Pedido P-003 confirmado.
+[EMAIL] Confirmación enviada para pedido: P-003
+[INVENTARIO] Reserva de stock aplicada para: P-003
+[AUDITORIA] Pedido P-003 -> CONFIRMADO
+
+--- Cancelando pedido P-003 (Observer) ---
+[GESTOR] Pedido P-003 cancelado.
+[EMAIL] Aviso de cancelación enviado para: P-003
+[INVENTARIO] Stock liberado para: P-003
+[AUDITORIA] Pedido P-003 -> CANCELADO
+
+--- Motor de descuentos (Strategy) ---
+Estrategias disponibles: [Temporada (20%), VIP (30%), Cupón (-$15.000)]
+[CARRITO] Estrategia activada: Temporada (20%)
+[CARRITO] Temporada (20%) -> Descuento: $20000.00 | Total: $80000.00
+[CARRITO] Estrategia activada: VIP (30%)
+[CARRITO] VIP (30%) -> Descuento: $30000.00 | Total: $70000.00
+[CARRITO] Estrategia activada: Cupón (-$15.000)
+[CARRITO] Cupón (-$15.000) -> Descuento: $15000.00 | Total: $85000.00
+```
+
+---
+
+## Estructura del proyecto
+
+```
+src/main/java/com/universidad/pedidos/
+│
+├── observer/
+│   ├── PedidoConfirmadoEvent.java
+│   ├── PedidoCanceladoEvent.java
+│   ├── GestorPedidosService.java
+│   ├── EmailNotifier.java
+│   ├── InventarioUpdater.java
+│   └── AuditoriaLogger.java
+│
+├── strategy/
+│   ├── EstrategiaDescuento.java
+│   ├── DescuentoTemporada.java
+│   ├── DescuentoVIP.java
+│   ├── DescuentoCupon.java
+│   └── CarritoService.java
+│
+├── modelo/
+│   └── Pedido.java
+│
+└── PedidosApp.java
+
+src/test/java/com/universidad/pedidos/
+└── StrategyTest.java
+```
+
+---
